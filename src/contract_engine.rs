@@ -18,6 +18,27 @@ impl ContractEngine {
         text: &str,
         custom_dealbreakers: &[String],
     ) -> AnalysisResult {
+        self.analyze_contract_internal(text, custom_dealbreakers, None, Language::English)
+    }
+
+    /// Enhanced analysis entrypoint running both rule-based checks and Microsoft Phi-3.5-mini on-device LLM
+    pub fn analyze_contract_with_llm(
+        &self,
+        text: &str,
+        custom_dealbreakers: &[String],
+        phi35: &crate::phi35_engine::Phi35Engine,
+        language: Language,
+    ) -> AnalysisResult {
+        self.analyze_contract_internal(text, custom_dealbreakers, Some(phi35), language)
+    }
+
+    fn analyze_contract_internal(
+        &self,
+        text: &str,
+        custom_dealbreakers: &[String],
+        phi35: Option<&crate::phi35_engine::Phi35Engine>,
+        language: Language,
+    ) -> AnalysisResult {
         let trimmed = text.trim();
         let lower_text = trimmed.to_lowercase();
 
@@ -409,7 +430,7 @@ impl ContractEngine {
             RiskLevel::Invalid => "",
         }.to_string();
 
-        AnalysisResult {
+        let mut result = AnalysisResult {
             risk_level,
             summary_en,
             summary_hi,
@@ -424,7 +445,13 @@ impl ContractEngine {
             pre_signing_checklist,
             is_invalid: false,
             phi35_insight: None,
+        };
+
+        if let Some(llm) = phi35 {
+            result.phi35_insight = Some(llm.analyze(trimmed, &result, language));
         }
+
+        result
     }
 
     /// Check if the document appears to be a legitimate contract rather than garbage/image noise

@@ -1,5 +1,6 @@
 use verdict_edge_rs::contract_engine::ContractEngine;
 use verdict_edge_rs::models::Language;
+use verdict_edge_rs::phi35_engine::Phi35Engine;
 
 fn main() {
     println!("============================================================");
@@ -7,6 +8,10 @@ fn main() {
     println!("============================================================");
 
     let engine = ContractEngine::new();
+    let phi35 = Phi35Engine::new();
+
+    println!("Phi-3.5 Status: {:?}", phi35.status());
+
     let sample_contract = r#"
         CONSULTING SERVICES AGREEMENT
         Section 3. Payment: Total fee shall be INR 75,000 payable within 30 days of invoice.
@@ -18,23 +23,23 @@ fn main() {
     "#;
 
     let dealbreakers = vec!["sole discretion".to_string()];
-    let result = engine.analyze_contract(sample_contract, &dealbreakers);
+    
+    // Analyze with both Rule Engine and Microsoft Phi-3.5-mini
+    let result = engine.analyze_contract_with_llm(
+        sample_contract,
+        &dealbreakers,
+        &phi35,
+        Language::English,
+    );
 
     println!("Risk Level: {}", result.risk_level.label(Language::English));
     println!("Summary (EN): {}", result.summary(Language::English));
-    println!("Summary (HI): {}", result.summary(Language::Hindi));
-    println!("Summary (KN): {}", result.summary(Language::Kannada));
     println!("Statutory Voidabilities Detected: {}", result.statutory_voidabilities.len());
     for sv in &result.statutory_voidabilities {
         println!(" - [{}] {}: {}", sv.act_section, sv.title(Language::English), sv.legal_reason(Language::English));
     }
-    println!("Vulnerabilities / Counter-Offers: {}", result.clause_breakdowns.len());
-    for cb in &result.clause_breakdowns {
-        println!(" - Vulnerability: {}", cb.problem(Language::English));
-        println!("   {}", cb.counter_offer_draft);
+
+    if let Some(insight) = &result.phi35_insight {
+        println!("\n{}", insight);
     }
-    println!("Discretion / Ambiguities: {}", result.ambiguities.len());
-    println!("Deadlines: {}", result.deadlines.len());
-    println!("Financial Exposures: {}", result.financial_exposures.len());
-    println!("Pre-signing Checklist Items: {}", result.pre_signing_checklist.len());
 }
