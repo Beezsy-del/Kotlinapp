@@ -5,3 +5,5 @@ pub mod voice_engine;
 pub mod document_importer;
 pub mod history_store;
 pub mod ui_input;
+pub mod ui_results;
+pub mod app;

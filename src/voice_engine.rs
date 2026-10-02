@@ -10,6 +10,12 @@ pub struct VoiceEngine {
     current_process: Arc<Mutex<Option<Child>>>,
 }
 
+impl PartialEq for VoiceEngine {
+    fn eq(&self, other: &Self) -> bool {
+        Arc::ptr_eq(&self.current_process, &other.current_process)
+    }
+}
+
 impl Default for VoiceEngine {
     fn default() -> Self {
         Self::new()
