@@ -19,8 +19,6 @@ pub fn ResultsScreen(props: ResultsScreenProps) -> Element {
 
     let lang = *props.selected_language.read();
     let result = props.result.clone();
-    let risk_color = result.risk_level.hex_color();
-    let risk_bg = result.risk_level.bg_color();
 
     let payment_window_str = if let Some(days) = result.ledger.payment_terms_days {
         format!("{} Days", days)
@@ -177,16 +175,19 @@ pub fn ResultsScreen(props: ResultsScreenProps) -> Element {
 
             // Overall Risk Banner
             div {
-                class: "risk-banner",
-                style: "background: {risk_bg}; border-color: {risk_color};",
+                class: match result.risk_level {
+                    crate::models::RiskLevel::High => "risk-banner risk-high",
+                    crate::models::RiskLevel::Medium => "risk-banner risk-medium",
+                    crate::models::RiskLevel::Low => "risk-banner risk-low",
+                    crate::models::RiskLevel::Invalid => "risk-banner risk-invalid",
+                },
                 div { class: "risk-badge-row",
                     span {
                         class: "risk-badge",
-                        style: "background: {risk_color}; color: #FFFFFF;",
                         "{result.risk_level.label(lang)}"
                     }
                     span {
-                        style: "color: {risk_color}; font-weight: 600; font-size: 14px;",
+                        class: "risk-level-desc",
                         "{result.risk_level.description(lang)}"
                     }
                 }
@@ -196,14 +197,18 @@ pub fn ResultsScreen(props: ResultsScreenProps) -> Element {
             // Canonical Evidence-First Legal Findings (Hard Invariant: Verified Source Quotes)
             if !result.canonical_findings.is_empty() {
                 div { class: "analysis-card",
-                    div { class: "card-title", style: "color: #EF4444;", "🔬 Evidence-Grounded Legal Findings" }
+                    div { class: "card-title", "🔬 Evidence-Grounded Legal Findings" }
                     for f in &result.canonical_findings {
                         div { class: "evidence-card",
                             div { class: "finding-header",
                                 div { class: "finding-badge-group",
                                     span {
-                                        class: "finding-severity",
-                                        style: "background: {f.severity.bg_color()}; color: {f.severity.hex_color()};",
+                                        class: match f.severity {
+                                            crate::models::RiskLevel::High => "finding-severity sev-high",
+                                            crate::models::RiskLevel::Medium => "finding-severity sev-medium",
+                                            crate::models::RiskLevel::Low => "finding-severity sev-low",
+                                            crate::models::RiskLevel::Invalid => "finding-severity sev-invalid",
+                                        },
                                         "[{f.severity.label(Language::English)}]"
                                     }
                                     span { class: "finding-rule-id", "Rule: {f.rule_id}" }
@@ -224,7 +229,7 @@ pub fn ResultsScreen(props: ResultsScreenProps) -> Element {
 
             // Structured Financial & Durations Ledger (Money & Dates Scanner)
             div { class: "analysis-card",
-                div { class: "card-title", style: "color: #38BDF8;", "💰 Financial & Durations Ledger" }
+                div { class: "card-title", "💰 Financial & Durations Ledger" }
                 div { class: "ledger-grid",
                     div { class: "ledger-item",
                         div { class: "ledger-label", "Contract Value" }
@@ -263,7 +268,7 @@ pub fn ResultsScreen(props: ResultsScreenProps) -> Element {
             // Cross-Clause Relationship Graph (Carve-outs & Punctured Caps)
             if !result.relations.is_empty() {
                 div { class: "analysis-card",
-                    div { class: "card-title", style: "color: #EC4899;", "🔗 Cross-Clause Dependency & Carve-Out Graph" }
+                    div { class: "card-title", "🔗 Cross-Clause Dependency & Carve-Out Graph" }
                     for rel in &result.relations {
                         div { class: "relation-row",
                             span { class: "relation-from", "{rel.from_clause}" }
@@ -281,7 +286,7 @@ pub fn ResultsScreen(props: ResultsScreenProps) -> Element {
             // Missing Critical Clauses Engine
             if !result.missing_clauses.is_empty() {
                 div { class: "analysis-card",
-                    div { class: "card-title", style: "color: #F87171;", "📋 Missing Essential Clauses for {result.contract_family.display_name()}" }
+                    div { class: "card-title", "📋 Missing Essential Clauses for {result.contract_family.display_name()}" }
                     for mc in &result.missing_clauses {
                         div { class: "missing-clause-item",
                             div { class: "missing-clause-header",
@@ -290,7 +295,7 @@ pub fn ResultsScreen(props: ResultsScreenProps) -> Element {
                             }
                             div { class: "missing-rationale", "{mc.rationale}" }
                             div { class: "missing-snippet-box",
-                                div { style: "font-weight: 600; margin-bottom: 4px; color: #E2E8F0;", "Suggested Clause to Insert:" }
+                                div { style: "font-weight: 600; margin-bottom: 4px; color: var(--text-primary);", "Suggested Clause to Insert:" }
                                 "{mc.suggested_clause_snippet}"
                             }
                         }
@@ -301,7 +306,7 @@ pub fn ResultsScreen(props: ResultsScreenProps) -> Element {
             // Dealbreaker Matches (if any triggered)
             if !result.dealbreaker_matches.is_empty() {
                 div { class: "analysis-card",
-                    div { class: "card-title", style: "color: #FCD34D;", "⚡ Custom Dealbreakers Triggered" }
+                    div { class: "card-title", "⚡ Custom Dealbreakers Triggered" }
                     for db in &result.dealbreaker_matches {
                         div { class: "ambiguity-item",
                             span { class: "ambiguity-phrase", "Rule: \"{db.rule_keyword}\"" }
@@ -316,7 +321,7 @@ pub fn ResultsScreen(props: ResultsScreenProps) -> Element {
             // Statutory Voidability (Indian Contract Act 1872)
             if !result.statutory_voidabilities.is_empty() {
                 div { class: "analysis-card",
-                    div { class: "card-title", style: "color: #EF4444;", "⚖️ Statutory Voidability Warnings (Indian Contract Act)" }
+                    div { class: "card-title", "⚖️ Statutory Voidability Warnings (Indian Contract Act)" }
                     for sv in &result.statutory_voidabilities {
                         div { class: "statutory-card",
                             div { class: "statutory-badge", "{sv.status}" }
@@ -341,7 +346,7 @@ pub fn ResultsScreen(props: ResultsScreenProps) -> Element {
             // Key Vulnerabilities & Counter-Clause Proposals
             if !result.clause_breakdowns.is_empty() {
                 div { class: "analysis-card",
-                    div { class: "card-title", style: "color: #34D399;", "🛡️ Proposed Counter-Clauses & Negotiation Leverage" }
+                    div { class: "card-title", "🛡️ Proposed Counter-Clauses & Negotiation Leverage" }
                     for (i, cb) in result.clause_breakdowns.iter().enumerate() {
                         div { class: "breakdown-item", key: "{i}",
                             div { class: "breakdown-problem", "⚠️ Risk: {cb.problem(lang)}" }
@@ -363,7 +368,7 @@ pub fn ResultsScreen(props: ResultsScreenProps) -> Element {
             // Interactive Pre-Signing Checklist
             if !checklist_state.read().is_empty() {
                 div { class: "analysis-card",
-                    div { class: "card-title", style: "color: #60A5FA;", "✅ Interactive Pre-Signing Due Diligence Checklist" }
+                    div { class: "card-title", "✅ Interactive Pre-Signing Due Diligence Checklist" }
                     for (idx, item) in checklist_state.read().iter().enumerate() {
                         div {
                             class: "checklist-item",
@@ -389,7 +394,7 @@ pub fn ResultsScreen(props: ResultsScreenProps) -> Element {
             // Discretion & Ambiguity Detector
             if !result.ambiguities.is_empty() {
                 div { class: "analysis-card",
-                    div { class: "card-title", style: "color: #FBBF24;", "🔍 Discretionary & Ambiguous Terms" }
+                    div { class: "card-title", "🔍 Discretionary & Ambiguous Terms" }
                     for amb in &result.ambiguities {
                         div { class: "ambiguity-item",
                             span { class: "ambiguity-phrase", "{amb.phrase}" }

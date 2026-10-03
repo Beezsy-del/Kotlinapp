@@ -119,7 +119,7 @@ pub fn InputScreen(props: InputScreenProps) -> Element {
                     button {
                         class: "history-btn",
                         onclick: move |_| props.on_open_history.call(()),
-                        "📂 Scan History"
+                        "Scan History"
                     }
                 }
             }
@@ -144,17 +144,17 @@ pub fn InputScreen(props: InputScreenProps) -> Element {
                         button {
                             class: "action-pill",
                             onclick: handle_load_sample,
-                            "📋 Load High-Risk Sample"
+                            "Load Sample Contract"
                         }
                         button {
                             class: "action-pill",
                             onclick: handle_file_upload,
-                            "📁 Upload PDF / Doc"
+                            "Import Document"
                         }
                         button {
                             class: "action-pill text-muted",
                             onclick: handle_clear_text,
-                            "🗑️ Clear"
+                            "Clear Editor"
                         }
                     }
                 }
@@ -169,8 +169,8 @@ pub fn InputScreen(props: InputScreenProps) -> Element {
                 // Custom Dealbreakers Section
                 div { class: "dealbreaker-box",
                     div { class: "dealbreaker-header",
-                        span { class: "dealbreaker-title", "⚡ Custom Dealbreaker Keywords" }
-                        span { class: "dealbreaker-desc", "Flags clauses containing user-specific dealbreakers (e.g. 60 days notice, non-compete)" }
+                        span { class: "dealbreaker-title", "Custom Dealbreaker Rules" }
+                        span { class: "dealbreaker-desc", "Flags clauses containing user-specified risks (e.g. 60 days notice, non-compete)" }
                     }
 
                     // Dealbreaker Chips
@@ -216,7 +216,7 @@ pub fn InputScreen(props: InputScreenProps) -> Element {
                         class: "primary-analyze-btn",
                         disabled: contract_text.read().trim().is_empty(),
                         onclick: move |_| props.on_analyze.call(()),
-                        "⚡ Analyze Contract with VerdictEdge & Microsoft Phi-3.5 Mini"
+                        "Analyze Contract Risks & Statutory Precedents"
                     }
                 }
             }

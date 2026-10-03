@@ -107,7 +107,7 @@ pub fn App() -> Element {
                         class: "history-drawer",
                         onclick: move |e| e.stop_propagation(),
                         div { class: "drawer-header",
-                            span { class: "drawer-title", "📂 Offline Scan History" }
+                            span { class: "drawer-title", "Offline Scan History" }
                             button {
                                 class: "banner-close",
                                 onclick: move |_| show_history.set(false),
@@ -133,8 +133,13 @@ pub fn App() -> Element {
                                         },
                                         div { class: "history-item-top",
                                             span {
-                                                class: "risk-badge",
-                                                style: "background: {rec.risk_level.hex_color()}; color: #FFFFFF; font-size: 10px; padding: 2px 6px;",
+                                                class: match rec.risk_level {
+                                                    crate::models::RiskLevel::High => "risk-badge badge-high",
+                                                    crate::models::RiskLevel::Medium => "risk-badge badge-med",
+                                                    crate::models::RiskLevel::Low => "risk-badge badge-low",
+                                                    crate::models::RiskLevel::Invalid => "risk-badge badge-inv",
+                                                },
+                                                style: "font-size: 10px; padding: 2px 7px;",
                                                 "{rec.risk_level.label(*selected_language.read())}"
                                             }
                                             span { class: "history-item-date", "{rec.formatted_date}" }
