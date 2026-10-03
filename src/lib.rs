@@ -7,3 +7,4 @@ pub mod history_store;
 pub mod ui_input;
 pub mod ui_results;
 pub mod app;
+pub mod jni_bridge;

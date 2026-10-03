@@ -5360,6 +5360,7 @@ version = "0.1.0"
 dependencies = [
  "chrono",
  "dioxus",
+ "jni 0.21.1",
  "lopdf",
  "regex",
  "rfd 0.15.4",
