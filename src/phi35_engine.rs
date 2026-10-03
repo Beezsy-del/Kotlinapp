@@ -11,6 +11,8 @@ use tokenizers::Tokenizer;
 /// Model architecture flavor for on-device inference
 #[derive(Debug, Clone, PartialEq)]
 pub enum ModelArch {
+    /// SmolLM2 360M (360M parameters, ~258MB, higher legal reasoning capability & fast on-device)
+    SmolLM2_360M,
     /// Ultra-lightweight SmolLM2 (135M parameters, ~100MB, ultra-fast & memory-efficient)
     SmolLM2_135M,
     /// Microsoft Phi-3.5-mini (3.8B parameters, ~2.2GB)
@@ -36,18 +38,29 @@ impl Default for ModelConfig {
             .unwrap_or_else(|_| PathBuf::from("."));
         let models_dir = home_dir.join(".verdictedge").join("models");
 
-        // Prefer ultra-lightweight SmolLM2-135M (100MB) for lightweight on-device execution
-        let smollm_path = models_dir.join("SmolLM2-135M-Instruct-Q4_K_M.gguf");
+        // Prefer SmolLM2-360M (258MB) for enhanced legal reasoning, falling back to 135M or Phi-3.5
+        let smollm360_path = models_dir.join("SmolLM2-360M-Instruct-Q4_K_M.gguf");
+        let smollm135_path = models_dir.join("SmolLM2-135M-Instruct-Q4_K_M.gguf");
         let phi35_path = models_dir.join("Phi-3.5-mini-instruct-Q4_K_M.gguf");
         let tokenizer_path = models_dir.join("tokenizer.json");
 
-        if smollm_path.exists() || !phi35_path.exists() {
+        if smollm360_path.exists() {
+            Self {
+                arch: ModelArch::SmolLM2_360M,
+                model_path: smollm360_path,
+                tokenizer_path,
+                max_tokens: 180,
+                temperature: 0.2, // Low temperature for factual legal reasoning
+                top_p: 0.9,
+                system_prompt: "You are VerdictEdge, an expert on-device legal AI assistant. Provide concise, clear, and actionable contract risk assessments.".into(),
+            }
+        } else if smollm135_path.exists() || !phi35_path.exists() {
             Self {
                 arch: ModelArch::SmolLM2_135M,
-                model_path: smollm_path,
+                model_path: smollm135_path,
                 tokenizer_path,
                 max_tokens: 128,
-                temperature: 0.2, // Low temperature for factual legal reasoning
+                temperature: 0.2,
                 top_p: 0.9,
                 system_prompt: "You are VerdictEdge, an expert on-device legal AI assistant. Provide concise, clear, and actionable contract risk assessments.".into(),
             }
@@ -109,6 +122,8 @@ impl Default for Phi35Engine {
 }
 
 impl Phi35Engine {
+    pub const SMOLLM2_360M_URL: &'static str =
+        "https://huggingface.co/bartowski/SmolLM2-360M-Instruct-GGUF/resolve/main/SmolLM2-360M-Instruct-Q4_K_M.gguf";
     pub const SMOLLM2_135M_URL: &'static str =
         "https://huggingface.co/bartowski/SmolLM2-135M-Instruct-GGUF/resolve/main/SmolLM2-135M-Instruct-Q4_K_M.gguf";
     pub const TOKENIZER_URL: &'static str =
@@ -144,6 +159,7 @@ impl Phi35Engine {
             ModelStatus::NotLoaded {
                 expected_path: self.config.model_path.clone(),
                 download_url: match self.config.arch {
+                    ModelArch::SmolLM2_360M => Self::SMOLLM2_360M_URL,
                     ModelArch::SmolLM2_135M => Self::SMOLLM2_135M_URL,
                     ModelArch::Phi35Mini => Self::PHI35_URL,
                 },
@@ -154,7 +170,7 @@ impl Phi35Engine {
     /// Formats prompt according to model architecture chat template
     pub fn format_instruct_prompt(&self, user_prompt: &str) -> String {
         match self.config.arch {
-            ModelArch::SmolLM2_135M => {
+            ModelArch::SmolLM2_360M | ModelArch::SmolLM2_135M => {
                 // ChatML format for SmolLM2: <|im_start|>system\n...<|im_end|>\n<|im_start|>user\n...<|im_end|>\n<|im_start|>assistant\n
                 format!(
                     "<|im_start|>system\n{}<|im_end|>\n<|im_start|>user\n{}<|im_end|>\n<|im_start|>assistant\n",
@@ -302,7 +318,12 @@ impl Phi35Engine {
             match self.generate_neural_tokens(&prompt, self.config.max_tokens) {
                 Ok(neural_output) if !neural_output.trim().is_empty() => {
                     let mut result = String::new();
-                    result.push_str("### 🧠 On-Device Neural LLM Analysis (SmolLM2 / Candle)\n\n");
+                    let arch_name = match self.config.arch {
+                        ModelArch::SmolLM2_360M => "SmolLM2-360M",
+                        ModelArch::SmolLM2_135M => "SmolLM2-135M",
+                        ModelArch::Phi35Mini => "Phi-3.5-mini",
+                    };
+                    result.push_str(&format!("### 🧠 On-Device Neural LLM Analysis ({} / Candle)\n\n", arch_name));
                     result.push_str(&neural_output);
                     result.push_str("\n\n---\n");
                     result.push_str(&self.generate_legal_insight(rule_findings, language));
