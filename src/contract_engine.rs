@@ -397,13 +397,84 @@ impl ContractEngine {
             is_resolved: false,
         });
 
-        // 14. Compute Overall Risk Level
+        // 14. Technical Blueprint Pipeline: Ledger, Graph, Policies, Missing Clauses
+        let family = crate::missing_clause_engine::MissingClauseEngine::new().detect_family(trimmed);
+        let missing_clauses = crate::missing_clause_engine::MissingClauseEngine::new().check_missing_clauses(trimmed, family);
+        let ledger = crate::ledger_extractor::LedgerExtractor::new().extract(trimmed);
+        let (relations, graph_findings) = crate::relationship_graph::RelationshipGraph::new().analyze(trimmed);
+
+        let policy_compiler = crate::policy_compiler::PolicyCompiler::new();
+        let compiled_policies: Vec<CompiledPolicyRule> = custom_dealbreakers
+            .iter()
+            .map(|s| policy_compiler.compile(s))
+            .collect();
+        let policy_violations = policy_compiler.evaluate(&compiled_policies, &ledger, trimmed);
+
+        // 15. Build Evidence-First Canonical Findings (Hard Invariant: Must have source evidence)
+        let mut canonical_findings = Vec::new();
+        let mut f_idx = 1;
+
+        // Add statutory findings
+        for sv in &statutory_voidabilities {
+            canonical_findings.push(Finding {
+                id: format!("FINDING-STATUTORY-{}", f_idx),
+                rule_id: match sv.act_section.as_str() {
+                    s if s.contains("Section 27") => "IN-ICA-S27-001".into(),
+                    s if s.contains("Section 28") => "IN-ICA-S28-001".into(),
+                    _ => "IN-ICA-GEN-001".into(),
+                },
+                category: "STATUTORY".into(),
+                severity: RiskLevel::High,
+                confidence_pct: 98,
+                affected_party: "Signing Party".into(),
+                evidence_quote: sv.quote_snippet.clone(),
+                related_clauses: vec!["Statutory Compliance".into()],
+                rationale_key: "statutory.voidability".into(),
+                why_it_matters: sv.legal_reason_en.clone(),
+                questions_to_ask: "Can this restriction be struck out or converted into a mutual non-solicitation?".into(),
+                action_recommendation: "Strike out clause as legally unenforceable under Indian Contract Act 1872.".into(),
+            });
+            f_idx += 1;
+        }
+
+        // Add graph findings (stealth liabilities & punctured caps)
+        for gf in &graph_findings {
+            canonical_findings.push(gf.clone());
+        }
+
+        // Add policy violations
+        for pv in &policy_violations {
+            canonical_findings.push(pv.clone());
+        }
+
+        // Add financial exposures
+        for fe in &financial_exposures {
+            canonical_findings.push(Finding {
+                id: format!("FINDING-FINANCIAL-{}", f_idx),
+                rule_id: "VE-FIN-EXPOSURE-001".into(),
+                category: "FINANCIAL".into(),
+                severity: RiskLevel::Medium,
+                confidence_pct: 92,
+                affected_party: "Signing Party".into(),
+                evidence_quote: if fe.quote_snippet.is_empty() { fe.amount_or_cost.clone() } else { fe.quote_snippet.clone() },
+                related_clauses: vec!["Financial Obligations".into()],
+                rationale_key: "financial.exposure".into(),
+                why_it_matters: fe.description_en.clone(),
+                questions_to_ask: "Can this fee/exposure be capped or made conditional upon written approval?".into(),
+                action_recommendation: "Insert mutual cap or approval requirement.".into(),
+            });
+            f_idx += 1;
+        }
+
+        // 16. Compute Overall Risk Level
         let risk_level = if !dealbreaker_matches.is_empty()
             || !statutory_voidabilities.is_empty()
+            || !graph_findings.is_empty()
+            || !policy_violations.is_empty()
             || clause_breakdowns.len() >= 2
         {
             RiskLevel::High
-        } else if !deadlines.is_empty() || !financial_exposures.is_empty() {
+        } else if !deadlines.is_empty() || !financial_exposures.is_empty() || !missing_clauses.is_empty() {
             RiskLevel::Medium
         } else {
             RiskLevel::Low
@@ -412,21 +483,21 @@ impl ContractEngine {
         let summary_en = match risk_level {
             RiskLevel::High => "High risk! Critical legal vulnerabilities or statutory voidability issues detected. Resolve proposed counter-clauses before signing.",
             RiskLevel::Medium => "Moderate risk. Review payment obligations, deadlines, and ambiguous discretionary terms.",
-            RiskLevel::Low => "Low risk. Standard agreement with balanced legal terms.",
+            RiskLevel::Low => "No material issues detected by configured checks; review before signing.",
             RiskLevel::Invalid => "",
         }.to_string();
 
         let summary_hi = match risk_level {
             RiskLevel::High => "उच्च जोखिम! गंभीर कानूनी कमियां या वैधानिक मुद्दे पाए गए। हस्ताक्षर करने से पहले प्रस्तावित जवाबी धाराओं पर बातचीत करें।",
             RiskLevel::Medium => "मध्यम जोखिम। भुगतान देनदारियों, समय सीमा और विवेकपूर्ण शर्तों की समीक्षा करें।",
-            RiskLevel::Low => "कम जोखिम। संतुलित प्रावधानों के साथ मानक समझौता।",
+            RiskLevel::Low => "कॉन्फ़िगर की गई जांचों द्वारा कोई महत्वपूर्ण समस्या नहीं पाई गई; हस्ताक्षर करने से पहले समीक्षा करें।",
             RiskLevel::Invalid => "",
         }.to_string();
 
         let summary_kn = match risk_level {
             RiskLevel::High => "ಹೆಚ್ಚಿನ ಅಪಾಯ! ಗಂಭೀರ ಕಾನೂನು ಲೋಪದೋಷಗಳಿವೆ. ಸಹಿ ಮಾಡುವ ಮುನ್ನ ಸೂಚಿಸಲಾದ ತಿದ್ದುಪಡಿಗಳನ್ನು ಪರಿಶೀಲಿಸಿ.",
             RiskLevel::Medium => "ಮಧ್ಯಮ ಅಪಾಯ. ಸಮಯದ ಮಿತಿಗಳು ಮತ್ತು ಪಾವತಿ ಜವಾಬ್ದಾರಿಗಳನ್ನು ಪರಿಶೀಲಿಸಿ.",
-            RiskLevel::Low => "ಕಡಿಮೆ ಅಪಾಯ. ಸಮತೋಲಿತ ನಿಯಮಗಳೊಂದಿಗೆ ಸಾಮಾನ್ಯ ಒಪ್ಪಂದ.",
+            RiskLevel::Low => "ಯಾವುದೇ ಪ್ರಮುಖ ಸಮಸ್ಯೆಗಳು ಕಂಡುಬಂದಿಲ್ಲ; ಸಹಿ ಮಾಡುವ ಮೊದಲು ಪರಿಶೀಲಿಸಿ.",
             RiskLevel::Invalid => "",
         }.to_string();
 
@@ -445,6 +516,13 @@ impl ContractEngine {
             pre_signing_checklist,
             is_invalid: false,
             phi35_insight: None,
+            contract_family: family,
+            canonical_findings,
+            relations,
+            ledger,
+            missing_clauses,
+            compiled_policies,
+            policy_violations,
         };
 
         if let Some(llm) = phi35 {

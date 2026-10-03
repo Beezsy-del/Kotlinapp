@@ -43,9 +43,48 @@ fn run_cli_demo() {
         Language::English,
     );
 
+    println!("Contract Classification: {}", result.contract_family.display_name());
     println!("Risk Level: {}", result.risk_level.label(Language::English));
     println!("Summary: {}", result.summary(Language::English));
-    println!("Statutory Voidabilities Detected: {}", result.statutory_voidabilities.len());
+
+    println!("\n--- Structured Financial & Durations Ledger ---");
+    println!(" * Contract Value: {}", result.ledger.contract_value.as_deref().unwrap_or("Not Specified"));
+    println!(" * Liability Cap: {}", result.ledger.liability_cap.as_deref().unwrap_or("Uncapped"));
+    println!(" * Late Fee Rate: {}", result.ledger.late_fee_rate.as_deref().unwrap_or("None"));
+    if let Some(notice) = result.ledger.termination_notice_days {
+        println!(" * Termination Notice: {} days", notice);
+    }
+    for warn in &result.ledger.cross_check_warnings {
+        println!(" ⚠️ {}", warn);
+    }
+
+    if !result.canonical_findings.is_empty() {
+        println!("\n--- Evidence-First Canonical Findings ({}) ---", result.canonical_findings.len());
+        for f in &result.canonical_findings {
+            println!(" [{}] Rule: {} (Confidence: {}%)", f.severity.label(Language::English), f.rule_id, f.confidence_pct);
+            println!("   Evidence: \"{}\"", f.evidence_quote);
+            println!("   Why: {}", f.why_it_matters);
+            println!("   Action: {}", f.action_recommendation);
+        }
+    }
+
+    if !result.relations.is_empty() {
+        println!("\n--- Cross-Clause Relationship Graph ({}) ---", result.relations.len());
+        for r in &result.relations {
+            println!("   {} --[{}]--> {}", r.from_clause, r.relation_type.label(), r.to_clause);
+            println!("    Reason: {}", r.reason);
+        }
+    }
+
+    if !result.missing_clauses.is_empty() {
+        println!("\n--- Missing Essential Clauses ({}) ---", result.missing_clauses.len());
+        for mc in &result.missing_clauses {
+            println!("   ❌ [{}] {}", mc.importance, mc.name);
+            println!("      Rationale: {}", mc.rationale);
+        }
+    }
+
+    println!("\nStatutory Voidabilities Detected: {}", result.statutory_voidabilities.len());
     for sv in &result.statutory_voidabilities {
         println!(" - [{}] {}", sv.act_section, sv.title(Language::English));
     }

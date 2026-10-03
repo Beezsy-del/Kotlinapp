@@ -22,6 +22,29 @@ pub fn ResultsScreen(props: ResultsScreenProps) -> Element {
     let risk_color = result.risk_level.hex_color();
     let risk_bg = result.risk_level.bg_color();
 
+    let payment_window_str = if let Some(days) = result.ledger.payment_terms_days {
+        format!("{} Days", days)
+    } else {
+        "Standard".to_string()
+    };
+
+    let notice_str = if let Some(days) = result.ledger.termination_notice_days {
+        format!("{} Days", days)
+    } else {
+        "Not Specified".to_string()
+    };
+
+    let auto_renewal_str = if result.ledger.auto_renewal {
+        if let Some(days) = result.ledger.auto_renewal_opt_out_days {
+            format!("Auto-Renews (Opt-out: {} days)", days)
+        } else {
+            "Auto-Renews Automatically".to_string()
+        }
+    } else {
+        "Manual / Fixed Term".to_string()
+    };
+
+
     let voice_audio = props.voice_engine.clone();
     let voice_nav = props.voice_engine.clone();
     let result_audio = props.result.clone();
@@ -147,6 +170,11 @@ pub fn ResultsScreen(props: ResultsScreenProps) -> Element {
                 }
             }
 
+            // Contract Family Badge (Structure Parser)
+            div { class: "contract-family-badge",
+                "📂 Contract Classification: {result.contract_family.display_name()}"
+            }
+
             // Overall Risk Banner
             div {
                 class: "risk-banner",
@@ -163,6 +191,111 @@ pub fn ResultsScreen(props: ResultsScreenProps) -> Element {
                     }
                 }
                 p { class: "risk-summary-text", "{result.summary(lang)}" }
+            }
+
+            // Canonical Evidence-First Legal Findings (Hard Invariant: Verified Source Quotes)
+            if !result.canonical_findings.is_empty() {
+                div { class: "analysis-card",
+                    div { class: "card-title", style: "color: #EF4444;", "🔬 Evidence-Grounded Legal Findings" }
+                    for f in &result.canonical_findings {
+                        div { class: "evidence-card",
+                            div { class: "finding-header",
+                                div { class: "finding-badge-group",
+                                    span {
+                                        class: "finding-severity",
+                                        style: "background: {f.severity.bg_color()}; color: {f.severity.hex_color()};",
+                                        "[{f.severity.label(Language::English)}]"
+                                    }
+                                    span { class: "finding-rule-id", "Rule: {f.rule_id}" }
+                                }
+                                span { class: "finding-confidence", "Confidence: {f.confidence_pct}%" }
+                            }
+                            div { class: "finding-party", "Affected: {f.affected_party} | Category: {f.category}" }
+                            if !f.evidence_quote.is_empty() {
+                                div { class: "quote-box", "Evidence: \"{f.evidence_quote}\"" }
+                            }
+                            div { class: "finding-why", "Why it matters: {f.why_it_matters}" }
+                            div { class: "finding-question", "❓ Negotiation Inquiry: {f.questions_to_ask}" }
+                            div { class: "finding-action-box", "🎯 Counsel Action: {f.action_recommendation}" }
+                        }
+                    }
+                }
+            }
+
+            // Structured Financial & Durations Ledger (Money & Dates Scanner)
+            div { class: "analysis-card",
+                div { class: "card-title", style: "color: #38BDF8;", "💰 Financial & Durations Ledger" }
+                div { class: "ledger-grid",
+                    div { class: "ledger-item",
+                        div { class: "ledger-label", "Contract Value" }
+                        div { class: "ledger-val", "{result.ledger.contract_value.as_deref().unwrap_or(\"Not Specified\")}" }
+                    }
+                    div { class: "ledger-item",
+                        div { class: "ledger-label", "Liability Ceiling" }
+                        div { class: "ledger-val", "{result.ledger.liability_cap.as_deref().unwrap_or(\"Not Capped (Unlimited)\")}" }
+                    }
+                    div { class: "ledger-item",
+                        div { class: "ledger-label", "Late Payment Fee" }
+                        div { class: "ledger-val", "{result.ledger.late_fee_rate.as_deref().unwrap_or(\"None / Standard\")}" }
+                    }
+                    div { class: "ledger-item",
+                        div { class: "ledger-label", "Payment Window" }
+                        div { class: "ledger-val", "{payment_window_str}" }
+                    }
+                    div { class: "ledger-item",
+                        div { class: "ledger-label", "Termination Notice" }
+                        div { class: "ledger-val", "{notice_str}" }
+                    }
+                    div { class: "ledger-item",
+                        div { class: "ledger-label", "Auto-Renewal" }
+                        div { class: "ledger-val", "{auto_renewal_str}" }
+                    }
+                }
+                if !result.ledger.cross_check_warnings.is_empty() {
+                    div { class: "ledger-warning-box",
+                        for warn in &result.ledger.cross_check_warnings {
+                            div { class: "ledger-warning-text", "⚠️ {warn}" }
+                        }
+                    }
+                }
+            }
+
+            // Cross-Clause Relationship Graph (Carve-outs & Punctured Caps)
+            if !result.relations.is_empty() {
+                div { class: "analysis-card",
+                    div { class: "card-title", style: "color: #EC4899;", "🔗 Cross-Clause Dependency & Carve-Out Graph" }
+                    for rel in &result.relations {
+                        div { class: "relation-row",
+                            span { class: "relation-from", "{rel.from_clause}" }
+                            span { class: "relation-badge", "{rel.relation_type.label()}" }
+                            span { class: "relation-to", "{rel.to_clause}" }
+                            div { class: "relation-reason", "Reason: {rel.reason}" }
+                            if !rel.evidence_quote.is_empty() {
+                                div { class: "quote-box", "Source: \"{rel.evidence_quote}\"" }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Missing Critical Clauses Engine
+            if !result.missing_clauses.is_empty() {
+                div { class: "analysis-card",
+                    div { class: "card-title", style: "color: #F87171;", "📋 Missing Essential Clauses for {result.contract_family.display_name()}" }
+                    for mc in &result.missing_clauses {
+                        div { class: "missing-clause-item",
+                            div { class: "missing-clause-header",
+                                span { class: "missing-clause-name", "❌ Missing: {mc.name}" }
+                                span { class: "missing-importance-tag", "{mc.importance} Priority" }
+                            }
+                            div { class: "missing-rationale", "{mc.rationale}" }
+                            div { class: "missing-snippet-box",
+                                div { style: "font-weight: 600; margin-bottom: 4px; color: #E2E8F0;", "Suggested Clause to Insert:" }
+                                "{mc.suggested_clause_snippet}"
+                            }
+                        }
+                    }
+                }
             }
 
             // Dealbreaker Matches (if any triggered)

@@ -350,6 +350,182 @@ pub struct AnalysisResult {
     /// Detailed on-device reasoning output produced by Microsoft Phi-3.5-mini
     #[serde(default)]
     pub phi35_insight: Option<String>,
+
+    /// Contract family classified by structure parser
+    #[serde(default)]
+    pub contract_family: ContractFamily,
+
+    /// Evidence-backed canonical findings (Hard Invariant: must contain exact source quote)
+    #[serde(default)]
+    pub canonical_findings: Vec<Finding>,
+
+    /// Cross-clause relationship graph (detects exceptions, overrides, un-capped liabilities)
+    #[serde(default)]
+    pub relations: Vec<Relation>,
+
+    /// Canonical structured money and dates ledger
+    #[serde(default)]
+    pub ledger: MoneyDateLedger,
+
+    /// Missing critical clauses expected for this contract family
+    #[serde(default)]
+    pub missing_clauses: Vec<MissingClause>,
+
+    /// User-defined dealbreakers compiled into typed policy rules
+    #[serde(default)]
+    pub compiled_policies: Vec<CompiledPolicyRule>,
+
+    /// Specific policy threshold violations
+    #[serde(default)]
+    pub policy_violations: Vec<Finding>,
+}
+
+/// Contract family classification
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
+pub enum ContractFamily {
+    #[default]
+    ServicesVendor,
+    Employment,
+    Nda,
+    SaaS,
+    General,
+}
+
+impl ContractFamily {
+    pub fn display_name(&self) -> &'static str {
+        match self {
+            ContractFamily::ServicesVendor => "Services / Vendor Agreement",
+            ContractFamily::Employment => "Employment / Consulting Agreement",
+            ContractFamily::Nda => "Non-Disclosure Agreement (NDA)",
+            ContractFamily::SaaS => "SaaS / Cloud Agreement",
+            ContractFamily::General => "General Commercial Agreement",
+        }
+    }
+}
+
+/// Relationship between clauses in the cross-clause relationship graph
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub enum RelationType {
+    References,
+    Defines,
+    Modifies,
+    Excludes,
+    Overrides,
+    Caps,
+    Uncaps,
+    Survives,
+}
+
+impl RelationType {
+    pub fn label(&self) -> &'static str {
+        match self {
+            RelationType::References => "REFERENCES",
+            RelationType::Defines => "DEFINES",
+            RelationType::Modifies => "MODIFIES",
+            RelationType::Excludes => "EXCLUDES",
+            RelationType::Overrides => "OVERRIDES",
+            RelationType::Caps => "CAPS",
+            RelationType::Uncaps => "UNCAPS",
+            RelationType::Survives => "SURVIVES",
+        }
+    }
+}
+
+/// Directed edge in the cross-clause relationship graph
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct Relation {
+    pub from_clause: String,
+    pub relation_type: RelationType,
+    pub to_clause: String,
+    pub evidence_quote: String,
+    pub reason: String,
+}
+
+/// Evidence-backed canonical legal finding
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct Finding {
+    pub id: String,
+    pub rule_id: String,
+    pub category: String, // STATUTORY, FINANCIAL, POLICY, TERMINATION, IP, COMMERCIAL
+    pub severity: RiskLevel,
+    pub confidence_pct: u8,
+    pub affected_party: String,
+    pub evidence_quote: String,
+    pub related_clauses: Vec<String>,
+    pub rationale_key: String,
+    pub why_it_matters: String,
+    pub questions_to_ask: String,
+    pub action_recommendation: String,
+}
+
+/// Canonical structured financial and dates ledger
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
+pub struct MoneyDateLedger {
+    pub contract_value: Option<String>,
+    pub liability_cap: Option<String>,
+    pub late_fee_rate: Option<String>,
+    pub payment_terms_days: Option<u32>,
+    pub termination_notice_days: Option<u32>,
+    pub cure_period_days: Option<u32>,
+    pub auto_renewal: bool,
+    pub auto_renewal_opt_out_days: Option<u32>,
+    pub cross_check_warnings: Vec<String>,
+}
+
+/// Typed operators for the constrained policy compiler
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub enum PolicyOperator {
+    Gt,
+    Gte,
+    Lt,
+    Lte,
+    Eq,
+    Ne,
+    Contains,
+    Forbidden,
+}
+
+/// Typed policy rule compiled from natural-language dealbreakers
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct CompiledPolicyRule {
+    pub raw_input: String,
+    pub field: String,
+    pub operator: PolicyOperator,
+    pub value_num: Option<i64>,
+    pub value_str: Option<String>,
+    pub severity: RiskLevel,
+    pub interpretation: String,
+}
+
+/// Missing critical clause detection
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct MissingClause {
+    pub name: String,
+    pub importance: String,
+    pub rationale: String,
+    pub suggested_clause_snippet: String,
+}
+
+/// Semantic redline change types between contract versions
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub enum SemanticChangeType {
+    RiskIncreased,
+    RiskDecreased,
+    NewObligation,
+    DeletedProtection,
+    NumericShift,
+    ScopeBroadened,
+}
+
+/// Semantic delta entry in contract comparison
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct SemanticRedlineDelta {
+    pub change_type: SemanticChangeType,
+    pub title: String,
+    pub clause_ref: String,
+    pub before_snippet: String,
+    pub after_snippet: String,
+    pub explanation: String,
 }
 
 impl AnalysisResult {
@@ -377,6 +553,13 @@ impl AnalysisResult {
             pre_signing_checklist: Vec::new(),
             is_invalid: true,
             phi35_insight: None,
+            contract_family: ContractFamily::General,
+            canonical_findings: Vec::new(),
+            relations: Vec::new(),
+            ledger: MoneyDateLedger::default(),
+            missing_clauses: Vec::new(),
+            compiled_policies: Vec::new(),
+            policy_violations: Vec::new(),
         }
     }
 }
@@ -430,6 +613,32 @@ mod tests {
             pre_signing_checklist: vec![],
             is_invalid: false,
             phi35_insight: Some("Phi-3.5 analysis complete.".into()),
+            contract_family: ContractFamily::ServicesVendor,
+            canonical_findings: vec![Finding {
+                id: "F-001".into(),
+                rule_id: "VE-LIAB-UNCAPPED-001".into(),
+                category: "FINANCIAL".into(),
+                severity: RiskLevel::High,
+                confidence_pct: 95,
+                affected_party: "Signing Party".into(),
+                evidence_quote: "Customer liability shall be unlimited.".into(),
+                related_clauses: vec!["Clause 12".into()],
+                rationale_key: "liability.uncapped".into(),
+                why_it_matters: "Shifts unlimited exposure to signing party.".into(),
+                questions_to_ask: "Can we cap liability at 12 months fees?".into(),
+                action_recommendation: "Negotiate mutual cap.".into(),
+            }],
+            relations: vec![Relation {
+                from_clause: "Clause 8 Liability Cap".into(),
+                relation_type: RelationType::Excludes,
+                to_clause: "Clause 12 Indemnity".into(),
+                evidence_quote: "excluding liabilities arising under indemnity".into(),
+                reason: "Indemnity is excluded from the overall cap".into(),
+            }],
+            ledger: MoneyDateLedger::default(),
+            missing_clauses: vec![],
+            compiled_policies: vec![],
+            policy_violations: vec![],
         };
 
         let json = serde_json::to_string(&result).expect("Failed to serialize");

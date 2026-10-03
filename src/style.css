@@ -808,3 +808,223 @@ body {
     font-size: 11px;
     cursor: pointer;
 }
+
+/* Blueprint Evidence-First Architecture Styles */
+.contract-family-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(99, 102, 241, 0.15);
+    border: 1px solid rgba(99, 102, 241, 0.35);
+    color: #A5B4FC;
+    font-size: 13px;
+    font-weight: 600;
+    padding: 6px 14px;
+    border-radius: 20px;
+    margin-bottom: 12px;
+}
+
+.evidence-card {
+    background: #131B2A;
+    border: 1px solid #1E293B;
+    border-left: 4px solid var(--danger);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 14px;
+}
+
+.finding-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.finding-badge-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.finding-severity {
+    font-size: 11px;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 4px;
+    text-transform: uppercase;
+}
+
+.finding-rule-id {
+    font-size: 11px;
+    color: #94A3B8;
+    background: rgba(148, 163, 184, 0.1);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-family: monospace;
+}
+
+.finding-confidence {
+    font-size: 12px;
+    color: #38BDF8;
+    font-weight: 600;
+}
+
+.finding-party {
+    font-size: 12px;
+    color: #CBD5E1;
+    margin-bottom: 6px;
+}
+
+.finding-why {
+    font-size: 13px;
+    color: #E2E8F0;
+    line-height: 1.5;
+    margin-bottom: 8px;
+}
+
+.finding-question {
+    font-size: 12px;
+    color: #FBBF24;
+    background: rgba(245, 158, 11, 0.08);
+    padding: 8px 12px;
+    border-radius: 6px;
+    border-left: 3px solid #F59E0B;
+    margin-bottom: 8px;
+}
+
+.finding-action-box {
+    font-size: 12px;
+    color: #34D399;
+    background: rgba(16, 185, 129, 0.08);
+    padding: 8px 12px;
+    border-radius: 6px;
+    border-left: 3px solid #10B981;
+}
+
+/* Ledger Styles */
+.ledger-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 12px;
+    margin-top: 12px;
+}
+
+.ledger-item {
+    background: #111827;
+    border: 1px solid #1F2937;
+    border-radius: 8px;
+    padding: 12px;
+}
+
+.ledger-label {
+    font-size: 11px;
+    color: #9CA3AF;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 4px;
+}
+
+.ledger-val {
+    font-size: 14px;
+    color: #F9FAFB;
+    font-weight: 600;
+}
+
+.ledger-warning-box {
+    margin-top: 12px;
+    background: rgba(239, 68, 68, 0.08);
+    border: 1px solid rgba(239, 68, 68, 0.2);
+    border-radius: 6px;
+    padding: 10px 14px;
+}
+
+.ledger-warning-text {
+    font-size: 13px;
+    color: #F87171;
+    margin-bottom: 4px;
+}
+
+/* Cross-Clause Relations */
+.relation-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: #131B2A;
+    border: 1px solid #1E293B;
+    border-radius: 8px;
+    padding: 12px;
+    margin-bottom: 10px;
+    flex-wrap: wrap;
+}
+
+.relation-from, .relation-to {
+    font-size: 13px;
+    font-weight: 600;
+    color: #F1F5F9;
+}
+
+.relation-badge {
+    font-size: 11px;
+    font-weight: 700;
+    background: rgba(244, 63, 94, 0.15);
+    border: 1px solid rgba(244, 63, 94, 0.3);
+    color: #FB7185;
+    padding: 3px 8px;
+    border-radius: 4px;
+}
+
+.relation-reason {
+    width: 100%;
+    font-size: 12px;
+    color: #94A3B8;
+    margin-top: 4px;
+}
+
+/* Missing Clauses */
+.missing-clause-item {
+    background: #131B2A;
+    border: 1px solid #1E293B;
+    border-radius: 8px;
+    padding: 14px;
+    margin-bottom: 10px;
+}
+
+.missing-clause-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 6px;
+}
+
+.missing-clause-name {
+    font-size: 14px;
+    font-weight: 600;
+    color: #F87171;
+}
+
+.missing-importance-tag {
+    font-size: 11px;
+    background: rgba(239, 68, 68, 0.15);
+    color: #FCA5A5;
+    padding: 2px 8px;
+    border-radius: 4px;
+}
+
+.missing-rationale {
+    font-size: 13px;
+    color: #CBD5E1;
+    margin-bottom: 8px;
+}
+
+.missing-snippet-box {
+    background: #090D14;
+    border: 1px dashed #334155;
+    border-radius: 6px;
+    padding: 10px;
+    font-size: 12px;
+    color: #94A3B8;
+    font-family: inherit;
+    line-height: 1.4;
+}

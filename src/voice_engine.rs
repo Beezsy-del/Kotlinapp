@@ -258,7 +258,7 @@ impl VoiceEngine {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::models::{FinancialExposure, RedFlag, RiskLevel, StatutoryVoidability};
+    use crate::models::{ContractFamily, FinancialExposure, MoneyDateLedger, RedFlag, RiskLevel, StatutoryVoidability};
 
     #[test]
     fn test_text_normalization_english() {
@@ -334,6 +334,13 @@ mod tests {
             pre_signing_checklist: vec![],
             is_invalid: false,
             phi35_insight: None,
+            contract_family: ContractFamily::General,
+            canonical_findings: vec![],
+            relations: vec![],
+            ledger: MoneyDateLedger::default(),
+            missing_clauses: vec![],
+            compiled_policies: vec![],
+            policy_violations: vec![],
         };
 
         let summary_en = engine.build_audio_summary(&result, Language::English);
