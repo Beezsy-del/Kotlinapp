@@ -63,4 +63,8 @@ fn run_cli_demo() {
 
     println!("\nSpoken Audio Briefing (Normalized):");
     println!("{}", voice.build_audio_summary(&result, Language::English));
+
+    if let Some(ref insight) = result.phi35_insight {
+        println!("\nOn-Device Neural Assessment:\n{}", insight);
+    }
 }
